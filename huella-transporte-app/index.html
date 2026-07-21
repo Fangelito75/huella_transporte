@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Encuesta sin identificadores directos y calculadora trazable de emisiones de los desplazamientos del IRNAS.">
+  <title>RutaCO₂ IRNAS · Huella de los desplazamientos</title>
+  <link rel="preconnect" href="https://tile.openstreetmap.org">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin="anonymous">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="https://cdn.jsdelivr.net/npm/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=" crossorigin="anonymous"></script>
+  <script defer src="factors.js"></script>
+  <script defer src="config.js"></script>
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#calculator">Saltar a la calculadora</a>
+
+  <header class="site-header">
+    <div class="brand-wrap">
+      <span class="brand-mark" aria-hidden="true">R</span>
+      <div>
+        <p class="brand">RutaCO₂ · IRNAS</p>
+        <p class="brand-subtitle">Encuesta de movilidad al trabajo · Alcance 3</p>
+      </div>
+    </div>
+    <div class="header-meta">
+      <span>Factores 2022–2025</span>
+      <span class="status-dot"><i aria-hidden="true"></i> cálculo trazable</span>
+    </div>
+  </header>
+
+  <main id="calculator" class="app-shell">
+    <section class="control-panel" aria-labelledby="form-title">
+      <div class="panel-heading">
+        <p class="eyebrow">Nueva estimación</p>
+        <h1 id="form-title">Calcula y compara tu huella</h1>
+        <p>Sin nombre ni correo. La hoja solo recibirá datos agregables del desplazamiento.</p>
+      </div>
+
+      <form id="route-form" novalidate>
+        <fieldset>
+          <legend><span>1</span> Perfil estadístico</legend>
+
+          <div class="profile-grid">
+            <div>
+              <label for="sex">Sexo</label>
+              <select id="sex" name="sex" required>
+                <option value="">Selecciona una opción</option>
+                <option value="mujer">Mujer</option>
+                <option value="hombre">Hombre</option>
+                <option value="otra">Otra opción</option>
+                <option value="no_responde">Prefiero no responder</option>
+              </select>
+            </div>
+            <div>
+              <label for="age-band">Edad</label>
+              <select id="age-band" name="ageBand" required>
+                <option value="">Selecciona un tramo</option>
+                <option value="18-24">18–24 años</option>
+                <option value="25-34">25–34 años</option>
+                <option value="35-44">35–44 años</option>
+                <option value="45-54">45–54 años</option>
+                <option value="55-64">55–64 años</option>
+                <option value="65+">65 años o más</option>
+                <option value="no_responde">Prefiero no responder</option>
+              </select>
+            </div>
+          </div>
+
+          <label for="research-group">Grupo o unidad del IRNAS</label>
+          <select id="research-group" name="researchGroup" required>
+            <option value="">Selecciona una opción</option>
+            <optgroup label="Suelos y Agua">
+              <option value="AGROCHEM">AGROCHEM · Agroquímica ambiental</option>
+              <option value="SOILPLANT">SOILPLANT · Uso sostenible del Sistema Suelo-Planta</option>
+              <option value="BIOREM">BIOREM · Biorremediación y Biodisponibilidad</option>
+              <option value="CONSOWAT">CONSOWAT · Control de la Contaminación en Suelos y Agua</option>
+            </optgroup>
+            <optgroup label="Biogeoquímica y Microbiomas">
+              <option value="DIVEX">DIVEX · Diversidad Microbiana y Ambientes Extremos</option>
+              <option value="MAPC">MAPC · Microbiología Ambiental y Patrimonio Cultural</option>
+              <option value="MOSS">MOSS · Materia Orgánica en Suelos y Sedimentos</option>
+              <option value="BIOGEOCOM">BIOGEOCOM · Geomicrobiología y Biogeoquímica</option>
+            </optgroup>
+            <optgroup label="Plantas">
+              <option value="SEMBIO">SEMBIO · Biotecnología de Semillas</option>
+              <option value="BIOVALOR">BIOVALOR · Biomasa Vegetal</option>
+              <option value="RIH">RIH · Regulación Iónica e Hídrica en Plantas</option>
+              <option value="BIOFUNLAB">BioFunLab · Biodiversidad y Funcionamiento Ecosistémico</option>
+              <option value="SIFOMED">SIFOMed · Sistemas Forestales Mediterráneos</option>
+              <option value="ECOVER">ECOVER · Ecofisiología Vegetal y Riego</option>
+            </optgroup>
+            <optgroup label="Otras unidades">
+              <option value="SCT">Servicios científico-técnicos</option>
+              <option value="GESTION">Administración, gestión o apoyo</option>
+              <option value="OTRA">Otra unidad / sin grupo</option>
+              <option value="NO_RESPONDE">Prefiero no responder</option>
+            </optgroup>
+          </select>
+          <p class="privacy-note"><strong>Privacidad:</strong> la edad se guarda como tramo. No se solicitan nombre, correo ni número de empleado.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend><span>2</span> Ruta habitual</legend>
+
+          <label for="origin">Origen</label>
+          <div class="input-with-icon">
+            <span class="route-pin origin-pin" aria-hidden="true"></span>
+            <input id="origin" name="origin" type="text" autocomplete="street-address" placeholder="Ej.: barrio o cruce cercano" required>
+          </div>
+
+          <label for="destination">Destino</label>
+          <div class="input-with-icon">
+            <span class="route-pin destination-pin" aria-hidden="true"></span>
+            <input id="destination" name="destination" type="text" autocomplete="street-address" placeholder="Ej.: IRNAS, Sevilla" required>
+          </div>
+
+          <div class="two-columns compact-row">
+            <label class="check-control" for="round-trip">
+              <input id="round-trip" name="roundTrip" type="checkbox" checked>
+              <span>Ida y vuelta cada día</span>
+            </label>
+            <button class="text-button" id="swap-route" type="button">Intercambiar</button>
+          </div>
+
+          <button class="primary-button" id="route-button" type="submit">
+            <span id="route-button-label">Calcular ruta</span>
+            <span class="button-arrow" aria-hidden="true">→</span>
+          </button>
+          <p id="route-status" class="form-status" role="status" aria-live="polite"></p>
+          <p class="helper-text">Origen y destino se envían al servicio de rutas para calcular la distancia, pero nunca se guardan en Google Sheets. Puedes indicar un cruce cercano en lugar de tu domicilio.</p>
+        </fieldset>
+
+        <fieldset>
+          <legend><span>3</span> Medio de transporte</legend>
+
+          <label for="transport-mode">Medio y propulsión</label>
+          <select id="transport-mode" name="transportMode"></select>
+
+          <div id="air-fields" class="conditional-fields" hidden>
+            <label for="cabin-class">Clase del billete</label>
+            <select id="cabin-class" name="cabinClass">
+              <option value="average">Pasajero medio</option>
+              <option value="economy">Turista</option>
+              <option value="premium">Turista premium</option>
+              <option value="business">Business</option>
+              <option value="first">Primera</option>
+            </select>
+            <label class="check-control" for="radiative-forcing">
+              <input id="radiative-forcing" name="radiativeForcing" type="checkbox" checked>
+              <span>Incluir efectos no-CO₂ de la aviación</span>
+            </label>
+          </div>
+
+          <div id="occupancy-field">
+            <label for="occupancy">Personas en el vehículo</label>
+            <div class="number-unit">
+              <input id="occupancy" name="occupancy" type="number" value="1" min="1" max="99" step="1" inputmode="numeric">
+              <span>personas</span>
+            </div>
+          </div>
+
+          <div id="custom-factor-fields" class="conditional-fields" hidden>
+            <label for="custom-factor">Factor específico</label>
+            <div class="number-unit">
+              <input id="custom-factor" name="customFactor" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ej.: 32,5">
+              <span id="custom-factor-unit">g CO₂e/p·km</span>
+            </div>
+            <label for="custom-source">Fuente o dato del operador</label>
+            <input id="custom-source" name="customSource" type="text" placeholder="Informe, año o URL">
+          </div>
+
+          <div class="factor-summary" id="factor-summary" aria-live="polite">
+            <div>
+              <span class="quality-badge" id="quality-badge">A</span>
+              <div>
+                <strong id="factor-name">Factor oficial</strong>
+                <p id="factor-detail">—</p>
+              </div>
+            </div>
+            <a id="factor-source" href="#" target="_blank" rel="noreferrer">Ver referencia</a>
+          </div>
+        </fieldset>
+
+        <fieldset>
+          <legend><span>4</span> Frecuencia</legend>
+          <div class="two-columns">
+            <div>
+              <label for="distance-km">Distancia de ida</label>
+              <div class="number-unit">
+                <input id="distance-km" name="distanceKm" type="number" min="0" step="0.01" inputmode="decimal" placeholder="Ruta">
+                <span>km</span>
+              </div>
+            </div>
+            <div>
+              <label for="work-days">Días al año</label>
+              <div class="number-unit">
+                <input id="work-days" name="workDays" type="number" value="210" min="1" max="366" step="1" inputmode="numeric">
+                <span>días</span>
+              </div>
+            </div>
+          </div>
+          <p class="helper-text">Puedes corregir la distancia con un dato del operador, billete u odómetro. El resultado lo marcará como dato manual.</p>
+        </fieldset>
+      </form>
+    </section>
+
+    <section class="workspace" aria-label="Mapa y resultados">
+      <div class="map-card">
+        <div class="map-toolbar">
+          <div>
+            <p class="eyebrow">Ruta cartografiada</p>
+            <p id="map-route-label" class="route-label">Introduce un origen y un destino</p>
+          </div>
+          <span id="route-method" class="method-pill">Pendiente</span>
+        </div>
+        <div id="map" role="application" aria-label="Mapa de la ruta seleccionada"></div>
+        <div class="map-attribution-note">
+          Cartografía © OpenStreetMap · rutas Valhalla/FOSSGIS · uso de demostración
+        </div>
+      </div>
+
+      <div class="results-grid" aria-live="polite">
+        <article class="main-result">
+          <div class="result-heading">
+            <div>
+              <p class="eyebrow">Huella anual estimada</p>
+              <div class="big-number"><strong id="annual-emissions">—</strong><span>kg CO₂e</span></div>
+            </div>
+            <span id="result-quality" class="result-quality">Sin calcular</span>
+          </div>
+          <div class="uncertainty-block">
+            <div class="uncertainty-labels">
+              <span>Intervalo orientativo</span>
+              <strong id="uncertainty-range">—</strong>
+            </div>
+            <div class="range-track" aria-hidden="true">
+              <span id="range-fill"></span>
+              <i id="range-marker"></i>
+            </div>
+          </div>
+          <p id="result-explanation" class="result-explanation">Calcula una ruta para obtener la huella, su factor y el grado de confianza.</p>
+        </article>
+
+        <article class="metric-card">
+          <span>Distancia anual</span>
+          <strong id="annual-distance">—</strong>
+          <small>km por trabajador</small>
+        </article>
+
+        <article class="metric-card">
+          <span>Factor aplicado</span>
+          <strong id="applied-factor">—</strong>
+          <small id="applied-unit">g CO₂e/persona·km</small>
+        </article>
+      </div>
+
+      <section class="benchmark-card" aria-labelledby="benchmark-title">
+        <div class="section-heading-row benchmark-heading">
+          <div>
+            <p class="eyebrow">Muestra acumulada</p>
+            <h2 id="benchmark-title">Tu posición respecto al IRNAS</h2>
+          </div>
+          <span id="storage-state" class="method-pill">Pendiente de conectar</span>
+        </div>
+
+        <p class="benchmark-intro">Guarda esta estimación para compararla con la media y la mediana de las respuestas recibidas. Una huella menor ocupa una posición mejor.</p>
+
+        <label class="check-control consent-control" for="data-consent">
+          <input id="data-consent" name="dataConsent" type="checkbox">
+          <span>Acepto guardar el tramo de edad, sexo, grupo y resultado del cálculo. Entiendo que no se guardarán las direcciones.</span>
+        </label>
+
+        <div class="benchmark-actions">
+          <button id="save-result" class="primary-button save-button" type="button" disabled>Guardar y ver mi posición</button>
+          <p id="storage-status" class="form-status" role="status" aria-live="polite">Configura la conexión con Google Sheets para activar el guardado.</p>
+        </div>
+
+        <div id="benchmark-results" class="benchmark-results" hidden>
+          <article class="benchmark-metric personal-metric">
+            <span>Tu huella guardada</span>
+            <strong id="saved-emissions">—</strong>
+            <small>kg CO₂e/año</small>
+          </article>
+          <article class="benchmark-metric">
+            <span>Media IRNAS</span>
+            <strong id="global-mean">—</strong>
+            <small id="global-difference">Muestra insuficiente</small>
+          </article>
+          <article class="benchmark-metric">
+            <span>Posición IRNAS</span>
+            <strong id="global-position">—</strong>
+            <small id="global-sample">Menor huella = mejor</small>
+          </article>
+          <article class="benchmark-metric group-metric">
+            <span>Comparación con tu grupo</span>
+            <strong id="group-mean">—</strong>
+            <small id="group-position">Se muestra desde 5 respuestas</small>
+          </article>
+        </div>
+        <p class="benchmark-footnote">Las comparaciones de un grupo se ocultan mientras tenga menos de 5 respuestas. La hoja de cálculo permanece privada y la web nunca descarga registros individuales.</p>
+      </section>
+
+      <section class="comparison-card" aria-labelledby="comparison-title">
+        <div class="section-heading-row">
+          <div>
+            <p class="eyebrow">Misma distancia y frecuencia</p>
+            <h2 id="comparison-title">Alternativas comparables</h2>
+          </div>
+          <button id="download-result" class="secondary-button" type="button" disabled>Descargar CSV</button>
+        </div>
+        <div id="comparison-chart" class="comparison-chart">
+          <p class="empty-state">El gráfico aparecerá después de calcular la ruta.</p>
+        </div>
+      </section>
+
+      <details class="methodology-card">
+        <summary>Cómo interpretar el resultado y sus límites</summary>
+        <div class="methodology-content">
+          <p><strong>Resultado principal:</strong> emisiones asociadas al desplazamiento según distancia, frecuencia, ocupación y factor documentado. No equivale a una medición si no se introduce consumo o factor real.</p>
+          <p><strong>Aviación:</strong> distancia ortodrómica con un incremento del 8 %, clase y factores UK 2025; se muestran separadamente los efectos no-CO₂.</p>
+          <p><strong>Patinete compartido:</strong> promedio de ciclo de vida para España de 50,17 g CO₂e/km, con rango europeo observado de 30–124. Sustituye el valor por el factor del operador cuando exista.</p>
+          <p><strong>Privacidad:</strong> la hoja recibe un identificador aleatorio, perfil por categorías, distancia, modo, frecuencia y emisiones. No recibe direcciones ni coordenadas. El prototipo sí consulta servicios cartográficos públicos para calcular la ruta.</p>
+        </div>
+      </details>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <p>Encuesta sin identificadores directos para el inventario de movilidad del IRNAS. Revise anualmente los factores.</p>
+    <a href="REFERENCIAS.md">Fuentes y criterios</a>
+  </footer>
+
+  <noscript>Esta aplicación necesita JavaScript para calcular y representar las rutas.</noscript>
+</body>
+</html>
